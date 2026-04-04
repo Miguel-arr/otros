@@ -1,0 +1,75 @@
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:17-alpine
+    container_name: exportador_db
+    restart: always
+    environment:
+      POSTGRES_DB: exportador_db
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - proxy_network #Cambiar por la network definida
+
+  # Backend (.NET 8)
+  backend:
+    build: 
+      context: ./backend/ExportadorDocumentos
+      dockerfile: Dockerfile
+    container_name: exportador_backend
+    restart: always
+    environment:
+      # Sobreescribe la cadena de conexión por la base de datos dockerizada
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=exportador_db;Username=devuser;Password=devpassword;Trust Server Certificate=true
+      - JWT__SecretKey=CambiameEnProduccionPorAlgoSeguro123456
+      - JWT__Issuer=ExportadorDocumentos
+      - JWT__Audience=ExportadorDocumentos
+      - JWT__ExpirationHours=1
+      - Gotenberg__Url=http://gotenberg:3000
+      # Ya que Nginx sirve el frontend en localhost y actua de proxy a /api, 
+      # a nivel de red externa todo viene del Frontend. 
+      - CORS__AllowedOrigins=http://localhost,http://localhost:80,http://frontend
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      - db
+    # Exponemos el puerto de red interna. ASP.NET 8 por defecto usa 8080.
+    ports:
+      - "8080:8080" # Opcional, solo si quieres acceder a la API directo para pruebas
+    networks:
+      - proxy_network #Cambiar por la network definida
+
+  # Gotenberg (Microservicio para conversión de documentos)
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: exportador_gotenberg
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - proxy_network #Cambiar por la network definida
+
+  # Frontend (Vite -> Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: exportador_frontend
+    restart: always
+    depends_on:
+      - backend
+    # Ya no exponemos puertos aquí porque Caddy se pondrá por delante
+    # ports:
+    #   - "80:80"
+    networks:
+      - proxy_network #Cambiar por la network definida
+
+volumes:
+  pgdata:
+
+networks:
+  proxy_network:
+    external: true

@@ -1,0 +1,539 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Permisos de Trabajo
+   Corporate theme · Navy + Gray · Inter font
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme Extension ─────────────────────────────────────────────── */
+@theme {
+  /* Navy color palette */
+  --color-navy: #1e3a5f;
+  --color-navy-50: #f3f6fb;
+  --color-navy-100: #e8eef6;
+  --color-navy-500: #4a7ab5;
+  --color-navy-600: #3a6298;
+  --color-navy-700: #2a4d76;
+  --color-navy-800: #1e3a5f;
+  --color-navy-900: #0f1a2e;
+
+  /* Custom spacing / sizing */
+  --spacing-30: 7.5rem;   /* max-h-30 → 120px */
+  --spacing-45: 11.25rem; /* min-h-45 → 180px */
+}
+
+/* ─── Base Reset ──────────────────────────────────────────────────────────────── */
+/* IMPORTANT: Must be inside @layer base so that @layer utilities (Tailwind v4)
+   has higher cascade priority. Without this, padding/margin utilities are
+   overridden by the bare * selector. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ─── Design Tokens (CSS vars for legacy components) ─────────────────────────── */
+:root {
+  --navy-900: #0f1a2e;
+  --navy-800: #1e3a5f;
+  --navy-700: #2a4d76;
+  --navy-600: #3a6298;
+  --navy-500: #4a7ab5;
+  --navy-100: #e8eef6;
+  --navy-50:  #f3f6fb;
+
+  --gray-900: #111827;
+  --gray-800: #1f2937;
+  --gray-700: #374151;
+  --gray-600: #4b5563;
+  --gray-500: #6b7280;
+  --gray-400: #9ca3af;
+  --gray-300: #d1d5db;
+  --gray-200: #e5e7eb;
+  --gray-100: #f3f4f6;
+  --gray-50:  #f9fafb;
+
+  --success:    #059669;
+  --success-bg: #ecfdf5;
+  --danger:     #dc2626;
+  --danger-bg:  #fef2f2;
+  --warning:    #d97706;
+
+  --primary:       var(--navy-800);
+  --primary-hover: var(--navy-700);
+  --bg:            var(--gray-50);
+  --card-bg:       #ffffff;
+  --text:          var(--gray-800);
+  --text-muted:    var(--gray-500);
+  --border:        var(--gray-200);
+  --border-focus:  var(--navy-500);
+
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-2xl: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+  --transition: 0.2s ease;
+}
+
+/* ─── Component Layer — Shared reusable classes ───────────────────────────────── */
+/* These classes are used by form section components (alturas, asistencia, etc.)
+   They live in @layer components so Tailwind utilities can override them. */
+@layer components {
+
+  /* ── Fields ──────────────────────────────────────────────────────────────── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .field__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--gray-600);
+  }
+
+  .field__input,
+  .field__textarea {
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-family: inherit;
+    color: var(--text);
+    width: 100%;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+    background: #fff;
+  }
+
+  .field__input:focus,
+  .field__textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.08);
+  }
+
+  .field__textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  /* ── Grids ───────────────────────────────────────────────────────────────── */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+
+  .grid-checks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-sm) var(--space-md);
+  }
+
+  .grid-radios {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Checkboxes ──────────────────────────────────────────────────────────── */
+  .check-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    padding: var(--space-sm) 0;
+  }
+
+  .check-label__input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+
+  .check-label__text {
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+
+  /* ── Subtítulos / separadores ────────────────────────────────────────────── */
+  .subtitle {
+    margin: var(--space-sm) 0 var(--space-md);
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: var(--space-lg) 0;
+  }
+
+  .section-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+  }
+
+  /* ── Ejecutor / Asistente card ───────────────────────────────────────────── */
+  .ejecutor-card {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--gray-50);
+  }
+
+  .ejecutor-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+  }
+
+  .ejecutor-card__title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .ejecutor-card__radios {
+    margin-top: var(--space-md);
+  }
+
+  .ejecutor-card__firma {
+    margin-top: var(--space-md);
+  }
+
+  /* ── Equipos / Medidas ───────────────────────────────────────────────────── */
+  .equipos-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .equipo-item {
+    padding: var(--space-md);
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-100);
+  }
+
+  .medida-item {
+    margin-bottom: var(--space-md);
+  }
+
+  /* ── Firmas grid (SeccionFirmasAutorizacion) ─────────────────────────────── */
+  .firmas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-lg);
+  }
+
+  .firma-box {
+    padding: var(--space-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--gray-50);
+  }
+
+  .firma-box__title {
+    margin: 0 0 var(--space-md);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .firma-box__fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  /* ── Cálculos (SeccionMedidas) ───────────────────────────────────────────── */
+  .calculo-result {
+    margin-top: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--navy-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--navy-100);
+  }
+
+  .calculo-result__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) 0;
+  }
+
+  .calculo-result__item:not(:last-child) {
+    border-bottom: 1px solid var(--navy-100);
+  }
+
+  .calculo-result__label {
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+  }
+
+  .calculo-result__value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .calculo-result__value--danger {
+    color: var(--danger);
+  }
+
+  .calculo-result__value--ok {
+    color: var(--success);
+  }
+
+  /* ── Alert banner (AlturasPage / AsistenciaPage) ─────────────────────────── */
+  .alert-banner {
+    padding: var(--space-md);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-lg);
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .alert-banner--error {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid #fca5a5;
+  }
+
+  .alert-banner--success {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid #86efac;
+  }
+
+  /* ── Botones compartidos ─────────────────────────────────────────────────── */
+  .btn-add {
+    padding: 6px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    transition: background var(--transition);
+  }
+
+  .btn-add:hover {
+    background: var(--primary-hover);
+  }
+
+  .btn-remove {
+    padding: 5px 12px;
+    background: none;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all var(--transition);
+  }
+
+  .btn-remove:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    transition: background var(--transition), transform 0.1s;
+    margin-top: var(--space-lg);
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-submit:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ── Spinner ─────────────────────────────────────────────────────────────── */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* ── Firma Digital (SignaturePad2 / legacy) ──────────────────────────────── */
+  .firma-group {
+    margin-top: var(--space-sm);
+  }
+
+  .firma-group__label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xs);
+  }
+
+  .firma-container {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .firma-canvas {
+    display: block;
+    width: 100% !important;
+    cursor: crosshair;
+    touch-action: none;
+    background: #fff;
+  }
+
+  .firma-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    padding: 6px 10px;
+    background: var(--gray-50);
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-limpiar {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-family: inherit;
+    transition: all var(--transition);
+  }
+
+  .btn-limpiar:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Responsive for section components ──────────────────────────────────────── */
+/* Tablet landscape */
+@media (max-width: 1024px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .firmas-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) {
+  .firmas-grid { grid-template-columns: 1fr; }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .grid-3,
+  .grid-2 { grid-template-columns: 1fr; }
+
+  .grid-checks { grid-template-columns: 1fr 1fr; }
+
+  .ejecutor-card { padding: var(--space-sm) var(--space-md); }
+  .equipo-item   { padding: var(--space-sm) var(--space-md); }
+  .firma-box     { padding: var(--space-md); }
+  .calculo-result { padding: var(--space-sm) var(--space-md); }
+
+  .calculo-result__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+
+  .btn-submit {
+    position: sticky;
+    bottom: 0;
+    border-radius: 0;
+    margin: 0 calc(-1 * var(--space-sm));
+    width: calc(100% + 2 * var(--space-sm));
+    padding: var(--space-md);
+    z-index: 50;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 320px) {
+  .grid-checks { grid-template-columns: 1fr; }
+}
