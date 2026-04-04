@@ -93,7 +93,7 @@ export default function Inspeccion_Equipos() {
         hoja: tipoInspeccion === 'eslinga'
           ? 'Eslinga'
           : tipoInspeccion === 'posicionamiento'
-            ? 'Eslinga Posicionamiento '
+            ? 'Eslinga Posicionamiento'
             : 'tieoff',
         datos,
         pdf: true

@@ -63,9 +63,9 @@ export default function SeccionEslingaPosicionamiento({
         <SectionGrid cols={2}>
           <FieldInput
             label="NOMBRE COLABORADOR"
-            name={`eslp_nombre_colaborador_${num}`}
-            value={formData[`eslp_nombre_colaborador_${num}` as keyof EslingasPosicionamientoExcelData] as string || ''}
-            onChange={e => updateField(`eslp_nombre_colaborador_${num}`, e.target.value)}
+            name={`eslp_nombre_colaborador${num}`}
+            value={formData[`eslp_nombre_colaborador${num}` as keyof EslingasPosicionamientoExcelData] as string || ''}
+            onChange={e => updateField(`eslp_nombre_colaborador${num}`, e.target.value)}
           />
 
           <FieldInput
@@ -136,7 +136,7 @@ export default function SeccionEslingaPosicionamiento({
       </SeccionDesplegable>
 
       {/* FIRMA */}
-      <SeccionDesplegable id={`eslp_firma_${num}`} titulo="FIRMA POR DÍA">
+      <SeccionDesplegable id={`eslp_firma_sec_${num}`} titulo="FIRMA POR DÍA">
 
         <select
           className="w-full border rounded-md p-2 mb-3"
