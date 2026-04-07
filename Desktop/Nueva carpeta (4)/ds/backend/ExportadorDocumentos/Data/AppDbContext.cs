@@ -7,6 +7,7 @@ namespace ExportadorDocumentos.Data;
 public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<InspeccionProgreso> InspeccionProgresos => Set<InspeccionProgreso>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 }

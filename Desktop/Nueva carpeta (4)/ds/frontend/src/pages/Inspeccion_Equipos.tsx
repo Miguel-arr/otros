@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import type { SignaturePadHandle } from '../components/SignaturePad';
 import FormLayout from '../components/FormLayout';
@@ -6,7 +6,7 @@ import AlertBanner from '../components/AlertBanner';
 import { FormSubmitButton } from '../components/ui';
 
 import { useFormPage } from '../hooks/useFormPage';
-import { generarDocumento, descargarArchivoBase64 } from '../services/api';
+import { generarDocumento, descargarArchivoBase64, guardarProgreso, obtenerPendientes, obtenerInspeccion, eliminarProgreso } from '../services/api';
 
 import type { GenerarDocumentoRequest } from '../types/api';
 
@@ -21,8 +21,6 @@ import { VALORES_INICIALES_LIN } from '../types/lineavida.types';
 import type { LineaVidaExcelData } from '../types/lineavida.types';
 import { VALORES_INICIALES_RET } from '../types/retractil.types';
 import type { RetractilExcelData } from '../types/retractil.types';
-
-
 
 import { VALORES_INICIALES_ESLP } from '../types/eslingaspos.types';
 import type { EslingasPosicionamientoExcelData } from '../types/eslingaspos.types';
@@ -47,6 +45,9 @@ type FormDataType =
   & RetractilExcelData;
 
 export default function Inspeccion_Equipos() {
+  const [pendientes, setPendientes] = useState<any[]>([]);
+  const [showPendientes, setShowPendientes] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState<FormDataType>(() => {
     try {
@@ -83,6 +84,65 @@ export default function Inspeccion_Equipos() {
 
   const firmaRef1 = useRef<SignaturePadHandle>(null);
   const firmaRef2 = useRef<SignaturePadHandle>(null);
+
+  useEffect(() => {
+    cargarPendientes();
+  }, []);
+
+  const cargarPendientes = async () => {
+    try {
+      const data = await obtenerPendientes();
+      setPendientes(data);
+    } catch (err) {
+      console.error("Error al cargar pendientes", err);
+    }
+  };
+
+  const handleGuardarProgreso = async () => {
+    setSaving(true);
+    try {
+      // Intentar obtener la serie de los campos comunes
+      const serie = (formData as any)[`esl_serie_1`] || 
+                    (formData as any)[`eslp_serie_1`] || 
+                    (formData as any)[`tie_serie_1`] || 
+                    (formData as any)[`pre_serie_1`] || 
+                    (formData as any)[`lin_serie_1`] || 
+                    (formData as any)[`ret_serie_1`] || 
+                    "SIN_SERIE";
+
+      await guardarProgreso(serie, tipoInspeccion, JSON.stringify(formData));
+      await cargarPendientes();
+      alert("Progreso guardado en la base de datos.");
+    } catch (err) {
+      alert("Error al guardar: " + err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCargarInspeccion = async (id: number) => {
+    try {
+      const data = await obtenerInspeccion(id);
+      const datos = JSON.parse(data.datosJson);
+      setFormData(datos);
+      setTipoInspeccion(data.seccion as any);
+      setShowPendientes(false);
+      localStorage.setItem(STORAGE_KEY, data.datosJson);
+      alert("Progreso cargado.");
+    } catch (err) {
+      alert("Error al cargar: " + err);
+    }
+  };
+
+  const handleEliminarProgreso = async (id: number) => {
+    if (!confirm("¿Eliminar este borrador?")) return;
+    try {
+      await eliminarProgreso(id);
+      await cargarPendientes();
+    } catch (err) {
+      alert("Error al eliminar: " + err);
+    }
+  };
 
   const updateField = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -146,6 +206,77 @@ export default function Inspeccion_Equipos() {
     >
 
       {alerta && <AlertBanner tipo={alerta.tipo} mensaje={alerta.mensaje} />}
+
+      <div className="flex justify-between items-center mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <div>
+          <h3 className="font-bold text-gray-700">Gestión de Progreso</h3>
+          <p className="text-xs text-gray-500">Guarda tu avance para continuar después.</p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            type="button"
+            onClick={() => setShowPendientes(!showPendientes)}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
+          >
+            {showPendientes ? 'Cerrar Listado' : `Ver Pendientes (${pendientes.length})`}
+          </button>
+          <button 
+            type="button"
+            disabled={saving}
+            onClick={handleGuardarProgreso}
+            className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Guardando...' : 'Guardar Progreso'}
+          </button>
+        </div>
+      </div>
+
+      {showPendientes && (
+        <div className="mb-6 bg-white border border-blue-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+            <span className="text-sm font-bold text-blue-800">Documentos en Progreso</span>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {pendientes.length === 0 ? (
+              <p className="p-4 text-sm text-gray-500 text-center">No hay documentos guardados.</p>
+            ) : (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                  <tr>
+                    <th className="px-4 py-2">Serie</th>
+                    <th className="px-4 py-2">Sección</th>
+                    <th className="px-4 py-2">Fecha</th>
+                    <th className="px-4 py-2 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {pendientes.map(p => (
+                    <tr key={p.id} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-4 py-3 font-medium">{p.serie}</td>
+                      <td className="px-4 py-3 capitalize">{p.seccion}</td>
+                      <td className="px-4 py-3 text-gray-500">{new Date(p.fechaActualizacion).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-right flex gap-2 justify-end">
+                        <button 
+                          onClick={() => handleCargarInspeccion(p.id)}
+                          className="text-blue-600 hover:underline font-semibold"
+                        >
+                          Continuar
+                        </button>
+                        <button 
+                          onClick={() => handleEliminarProgreso(p.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
 

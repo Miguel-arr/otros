@@ -53,3 +53,61 @@ export function descargarArchivoBase64(base64: string, nombreArchivo: string, mi
     URL.revokeObjectURL(url);
   }, 10_000);
 }
+
+/**
+ * Guarda el progreso de una inspección.
+ */
+export async function guardarProgreso(serie: string, seccion: string, datosJson: string): Promise<any> {
+  const res = await fetch('/api/inspecciones/guardar', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ serie, seccion, datosJson }),
+  });
+
+  if (res.status === 401) throw new Error('SESION_EXPIRADA');
+  if (!res.ok) throw new Error(await res.text() || `Error ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Obtiene la lista de inspecciones pendientes.
+ */
+export async function obtenerPendientes(): Promise<any[]> {
+  const res = await fetch('/api/inspecciones/pendientes', {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (res.status === 401) throw new Error('SESION_EXPIRADA');
+  if (!res.ok) throw new Error(await res.text() || `Error ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Obtiene los datos de una inspección guardada.
+ */
+export async function obtenerInspeccion(id: number): Promise<any> {
+  const res = await fetch(`/api/inspecciones/${id}`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (res.status === 401) throw new Error('SESION_EXPIRADA');
+  if (!res.ok) throw new Error(await res.text() || `Error ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Elimina un progreso guardado.
+ */
+export async function eliminarProgreso(id: number): Promise<any> {
+  const res = await fetch(`/api/inspecciones/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (res.status === 401) throw new Error('SESION_EXPIRADA');
+  if (!res.ok) throw new Error(await res.text() || `Error ${res.status}`);
+  return res.json();
+}
