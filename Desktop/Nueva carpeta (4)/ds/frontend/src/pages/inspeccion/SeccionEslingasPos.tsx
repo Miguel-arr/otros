@@ -7,13 +7,13 @@ import { FieldInput, SectionGrid } from '../../components/ui';
 import type { EslingasPosicionamientoExcelData } from '../../types/eslingaspos.types';
 
 const dias = [
-  { key: 'lun', label: 'LUNES' },
-  { key: 'mar', label: 'MARTES' },
-  { key: 'mie', label: 'MIERCOLES' },
-  { key: 'jue', label: 'JUEVES' },
-  { key: 'vie', label: 'VIERNES' },
-  { key: 'sab', label: 'SABADO' },
-  { key: 'dom', label: 'DOMINGO' },
+  { key: 'lun', label: 'Lun' },
+  { key: 'mar', label: 'Mar' },
+  { key: 'mie', label: 'Mié' },
+  { key: 'jue', label: 'Jue' },
+  { key: 'vie', label: 'Vie' },
+  { key: 'sab', label: 'Sáb' },
+  { key: 'dom', label: 'Dom' },
 ];
 
 const opciones = ['SI', 'NO', 'N/A'];
@@ -34,24 +34,56 @@ export default function SeccionEslingaPosicionamiento({
 
   const [diaFirma, setDiaFirma] = useState('lun');
 
+  // HEADER
+  const HeaderDias = () => (
+    <div className="grid grid-cols-8 bg-gray-200 text-sm font-semibold border-b border-gray-400">
+      <div className="p-3 border-r text-center">Inspección</div>
+      {dias.map((d, i) => (
+        <div
+          key={d.key}
+          className={`p-3 text-center ${
+            i !== 0 ? 'border-l-2 border-gray-500' : ''
+          }`}
+        >
+          {d.label}
+        </div>
+      ))}
+    </div>
+  );
+
+  // FILAS
   const renderFila = (base: string, label: string) => (
-    <div className="mb-5">
-      <p className="font-semibold mb-2">{label}</p>
-      <div className="grid-7">
-        {dias.map(d => {
-          const field = `${base}_${d.key}_${num}`;
-          return (
-            <RadioGroup
-              key={field}
-              name={field}
-              value={formData[field as keyof EslingasPosicionamientoExcelData] as string}
-              onChange={e => updateField(field, e.target.value)}
-              options={opciones}
-              label={d.label}
-            />
-          );
-        })}
+    <div className="grid grid-cols-8 border-b border-gray-300 min-h-60px">
+      
+      {/* LABEL */}
+      <div className="p-3 text-sm border-r bg-gray-50 flex items-center">
+        {label}
       </div>
+
+      {/* DIAS */}
+      {dias.map((d, i) => {
+        const field = `${base}_${d.key}_${num}`;
+
+        return (
+          <div
+            key={field}
+            className={`flex items-center justify-center px-2 ${
+              i !== 0 ? 'border-l-2 border-gray-300' : ''
+            }`}
+          >
+            <div className="w-full">
+              <RadioGroup
+                name={field}
+                value={formData[field as keyof EslingasPosicionamientoExcelData] as string}
+                onChange={e => updateField(field, e.target.value)}
+                options={opciones}
+                label=""
+                compact
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -63,35 +95,35 @@ export default function SeccionEslingaPosicionamiento({
         <SectionGrid cols={2}>
           <FieldInput
             label="NOMBRE COLABORADOR"
-            name={`eslp_nombre_colaborador${num}`}
+            name={`nombre_colaborador${num}`}
             value={formData[`eslp_nombre_colaborador${num}` as keyof EslingasPosicionamientoExcelData] as string || ''}
             onChange={e => updateField(`eslp_nombre_colaborador${num}`, e.target.value)}
           />
 
           <FieldInput
             label="SERIE"
-            name={`eslp_serie_${num}`}
+            name={`serie_${num}`}
             value={formData[`eslp_serie_${num}` as keyof EslingasPosicionamientoExcelData] || ''}
             onChange={e => updateField(`eslp_serie_${num}`, e.target.value)}
           />
 
           <FieldInput
             label="MES"
-            name={`eslp_mes_${num}`}
+            name={`mes_${num}`}
             value={formData[`eslp_mes_${num}` as keyof EslingasPosicionamientoExcelData] || ''}
             onChange={e => updateField(`eslp_mes_${num}`, e.target.value)}
           />
 
           <FieldInput
             label="AÑO"
-            name={`eslp_anio_${num}`}
+            name={`anio_${num}`}
             value={formData[`eslp_anio_${num}` as keyof EslingasPosicionamientoExcelData] || ''}
             onChange={e => updateField(`eslp_anio_${num}`, e.target.value)}
           />
 
           <FieldInput
             label="FECHA"
-            name={`eslp_fecha_${num}`}
+            name={`fecha_${num}`}
             value={formData[`eslp_fecha_${num}` as keyof EslingasPosicionamientoExcelData] || ''}
             onChange={e => updateField(`eslp_fecha_${num}`, e.target.value)}
           />
@@ -100,29 +132,38 @@ export default function SeccionEslingaPosicionamiento({
 
       {/* GANCHOS */}
       <SeccionDesplegable id={`ganchos_${num}`} titulo="GANCHOS" defaultAbierto>
-        {renderFila('eslp_ganc_desg', 'Desgaste en los extremos')}
-        {renderFila('eslp_ganc_corr', 'Corrosión')}
-        {renderFila('eslp_ganc_def', 'Deformación')}
-        {renderFila('eslp_ganc_fis', 'Fisuras, golpes, hundimientos')}
-        {renderFila('eslp_ganc_bord', 'Bordes filosos y arrugados')}
-        {renderFila('eslp_ganc_func', 'Abren y cierran correctamente')}
-        {renderFila('eslp_ganc_oj', 'Ojetes deformados y rotos')}
+        <div className="border rounded-lg overflow-hidden mb-4">
+          <HeaderDias />
+          {renderFila('eslp_ganc_desg', 'Desgaste en los extremos')}
+          {renderFila('eslp_ganc_corr', 'Corrosión')}
+          {renderFila('eslp_ganc_def', 'Deformación')}
+          {renderFila('eslp_ganc_fis', 'Fisuras, golpes, hundimientos')}
+          {renderFila('eslp_ganc_bord', 'Bordes filosos y arrugados')}
+          {renderFila('eslp_ganc_func', 'Abren y cierran correctamente')}
+          {renderFila('eslp_ganc_oj', 'Ojetes deformados y rotos')}
+        </div>
       </SeccionDesplegable>
 
       {/* REATA */}
       <SeccionDesplegable id={`reata_${num}`} titulo="REATA / CUERDA" defaultAbierto>
-        {renderFila('eslp_rea_hoy', 'Hoyos o agujeros')}
-        {renderFila('eslp_rea_des', 'Deshilachadas')}
-        {renderFila('eslp_rea_dsg', 'Desgastadas')}
-        {renderFila('eslp_rea_tor', 'Hay torsión')}
-        {renderFila('eslp_rea_suc', 'Suciedad excesiva')}
-        {renderFila('eslp_rea_quem', 'Quemaduras')}
-        {renderFila('eslp_rea_pint', 'Pintura / rigidez')}
+        <div className="border rounded-lg overflow-hidden mb-4">
+          <HeaderDias />
+          {renderFila('eslp_rea_hoy', 'Hoyos o agujeros')}
+          {renderFila('eslp_rea_des', 'Deshilachadas')}
+          {renderFila('eslp_rea_dsg', 'Desgastadas')}
+          {renderFila('eslp_rea_tor', 'Hay torsión')}
+          {renderFila('eslp_rea_suc', 'Suciedad excesiva')}
+          {renderFila('eslp_rea_quem', 'Quemaduras')}
+          {renderFila('eslp_rea_pint', 'Pintura / rigidez')}
+        </div>
       </SeccionDesplegable>
 
       {/* GENERAL */}
       <SeccionDesplegable id={`estado_${num}`} titulo="ESTADO GENERAL">
-        {renderFila('eslp_gen_apto', 'Es apta para trabajo en altura')}
+        <div className="border rounded-lg overflow-hidden mb-4">
+          <HeaderDias />
+          {renderFila('eslp_gen_apto', 'Es apta para trabajo en altura')}
+        </div>
       </SeccionDesplegable>
 
       {/* OBS */}
@@ -136,7 +177,7 @@ export default function SeccionEslingaPosicionamiento({
       </SeccionDesplegable>
 
       {/* FIRMA */}
-      <SeccionDesplegable id={`eslp_firma_sec_${num}`} titulo="FIRMA POR DÍA">
+      <SeccionDesplegable id={`eslp_firma_${num}`} titulo="FIRMA POR DÍA">
 
         <select
           className="w-full border rounded-md p-2 mb-3"
@@ -158,7 +199,6 @@ export default function SeccionEslingaPosicionamiento({
             if (!firma) return;
 
             const campo = `eslp_firma_${diaFirma}_${num}`;
-
             updateField(campo, JSON.stringify({ firma_base64: firma }));
           }}
         >

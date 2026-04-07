@@ -13,22 +13,38 @@ import type { GenerarDocumentoRequest } from '../types/api';
 // 🔥 TIPOS
 import { VALORES_INICIALES_ESL } from '../types/eslingas.types';
 import type { EslingasExcelData } from '../types/eslingas.types';
+import { VALORES_INICIALES_TIE } from '../types/tieoff.types';
+import type { TieOffExcelData } from '../types/tieoff.types';
+import { VALORES_INICIALES_PRE } from '../types/preusoarnes.types';
+import type { PreusoExcelData } from '../types/preusoarnes.types';
+import { VALORES_INICIALES_LIN } from '../types/lineavida.types';
+import type { LineaVidaExcelData } from '../types/lineavida.types';
+import { VALORES_INICIALES_RET } from '../types/retractil.types';
+import type { RetractilExcelData } from '../types/retractil.types';
+
+
 
 import { VALORES_INICIALES_ESLP } from '../types/eslingaspos.types';
 import type { EslingasPosicionamientoExcelData } from '../types/eslingaspos.types';
 
-import { VALORES_INICIALES_TIE } from '../types/tieoff.types';
-import type { TieOffExcelData } from '../types/tieoff.types';
-
 // 🔥 SECCIONES
 import SeccionEslinga from './inspeccion/SeccionEslinga';
 import SeccionEslingaPos from './inspeccion/SeccionEslingasPos';
-import SeccionTieOff from './inspeccion/SeccionTieOff';
+import SeccionTieoff from './inspeccion/SeccionTieoff';
+import SeccionPreuso from './inspeccion/SeccionPreuso';
+import SeccionLineaVida from './inspeccion/SeccionLineaVida';
+import SeccionRetractil from './inspeccion/SeccionRetractil';
 
 const STORAGE_KEY = 'inspeccion_equipos';
 
 // 🔥 TIPO UNIFICADO (AQUÍ ESTÁ LA MAGIA)
-type FormDataType = EslingasExcelData & EslingasPosicionamientoExcelData & TieOffExcelData;
+type FormDataType =
+  & EslingasExcelData
+  & EslingasPosicionamientoExcelData
+  & TieOffExcelData
+  & PreusoExcelData
+  & LineaVidaExcelData
+  & RetractilExcelData;
 
 export default function Inspeccion_Equipos() {
 
@@ -39,7 +55,10 @@ export default function Inspeccion_Equipos() {
       const base = {
         ...VALORES_INICIALES_ESL,
         ...VALORES_INICIALES_ESLP,
-        ...VALORES_INICIALES_TIE
+        ...VALORES_INICIALES_TIE,
+        ...VALORES_INICIALES_PRE,
+        ...VALORES_INICIALES_LIN,
+        ...VALORES_INICIALES_RET
       };
 
       return saved
@@ -50,12 +69,17 @@ export default function Inspeccion_Equipos() {
       return {
         ...VALORES_INICIALES_ESL,
         ...VALORES_INICIALES_ESLP,
-        ...VALORES_INICIALES_TIE
+        ...VALORES_INICIALES_TIE,
+        ...VALORES_INICIALES_PRE,
+        ...VALORES_INICIALES_LIN,
+        ...VALORES_INICIALES_RET
       };
     }
   });
 
-  const [tipoInspeccion, setTipoInspeccion] = useState<'eslinga' | 'posicionamiento' | 'tieoff'>('eslinga');
+  const [tipoInspeccion, setTipoInspeccion] = useState<
+  'eslinga' | 'posicionamiento' | 'tieoff' |'preuso' | 'lineavida' | 'retractil'
+>('eslinga');
 
   const firmaRef1 = useRef<SignaturePadHandle>(null);
   const firmaRef2 = useRef<SignaturePadHandle>(null);
@@ -71,9 +95,9 @@ export default function Inspeccion_Equipos() {
 
       const datos: any = { ...formData };
 
-      // 🔥 SOPORTE COMPLETO PARA TODAS LAS FIRMAS
+      // SOPORTE COMPLETO PARA TODAS LAS FIRMAS
       Object.keys(datos).forEach(key => {
-        if (key.startsWith('esl_firma') || key.startsWith('eslp_firma') || key.startsWith('tie_firma')) {
+        if ( key.startsWith('esl_firma') ||  key.startsWith('eslp_firma') ||  key.startsWith('tie_firma') ||  key.startsWith('pre_firma') ||  key.startsWith('lin_firma') ||  key.startsWith('ret_firma'))  {
           const val = datos[key];
 
           if (val) {
@@ -90,11 +114,7 @@ export default function Inspeccion_Equipos() {
 
       const req: GenerarDocumentoRequest = {
         plantilla: 'INSPECCION EQUIPO PARA ALTURAS.xlsx',
-        hoja: tipoInspeccion === 'eslinga'
-          ? 'Eslinga'
-          : tipoInspeccion === 'posicionamiento'
-            ? 'Eslinga Posicionamiento '
-            : 'tieoff',
+        hoja: tipoInspeccion === 'eslinga' ? 'Eslinga' : tipoInspeccion === 'posicionamiento' ? 'Eslinga Posicionamiento ' : tipoInspeccion === 'tieoff' ? 'tieoff' : tipoInspeccion === 'lineavida' ? ' Linea de Vida' : tipoInspeccion === 'retractil' ? 'Retractil ' : ' Preuso Arnés',
         datos,
         pdf: true
       };
@@ -139,12 +159,15 @@ export default function Inspeccion_Equipos() {
             onChange={e => setTipoInspeccion(e.target.value as any)}
           >
             <option value="eslinga">Eslingas</option>
-          <option value="posicionamiento">Eslingas de Posicionamiento</option>
-          <option value="tieoff">TieOff</option>
-        </select>
-      </div>
+            <option value="posicionamiento">Eslingas de Posicionamiento</option>
+            <option value="tieoff">Tie Off</option>
+            <option value="preuso">Preuso</option>
+            <option value="lineavida">Línea de Vida</option>
+            <option value="retractil">Retráctil</option>
+          </select>
+        </div>
 
-        {/* 🔥 ESLINGAS */}
+        {/* ESLINGAS */}
         {tipoInspeccion === 'eslinga' && (
           <>
             <SeccionEslinga
@@ -163,7 +186,7 @@ export default function Inspeccion_Equipos() {
           </>
         )}
 
-        {/* 🔥 POSICIONAMIENTO */}
+        {/* POSICIONAMIENTO */}
         {tipoInspeccion === 'posicionamiento' && (
           <>
             <SeccionEslingaPos
@@ -182,22 +205,71 @@ export default function Inspeccion_Equipos() {
           </>
         )}
 
-        {/* 🔥 TIE-OFF */}
+        {/* TIE OFF */}
         {tipoInspeccion === 'tieoff' && (
           <>
-            <SeccionTieOff
+            <SeccionTieoff
               num="1"
               formData={formData}
               updateField={updateField}
               firmaRef={firmaRef1}
             />
 
-            <SeccionTieOff
+            <SeccionTieoff
               num="2"
               formData={formData}
               updateField={updateField}
               firmaRef={firmaRef2}
             />
+          </>
+        )}
+
+        {/* PREUSO */}
+        {tipoInspeccion === 'preuso' && (
+          <>
+            <SeccionPreuso
+              num="1"
+              formData={formData}
+              updateField={updateField}
+              firmaRef={firmaRef1}
+            />
+
+            <SeccionPreuso
+              num="2"
+              formData={formData}
+              updateField={updateField}
+              firmaRef={firmaRef2}
+            />
+          </>
+        )}
+
+        {/*LINEA DE VIDA */}
+        {tipoInspeccion === 'lineavida' && (
+          <>
+            <SeccionLineaVida num="1" 
+            formData={formData} 
+            updateField={updateField} 
+            firmaRef={firmaRef1} />
+            
+            <SeccionLineaVida num="2"
+            formData={formData} 
+            updateField={updateField} 
+            firmaRef={firmaRef2} />
+          </>
+        )}
+
+        {/* RETRÁCTIL */}
+        {tipoInspeccion === 'retractil' && (
+          <>
+            <SeccionRetractil num="1" 
+            formData={formData} 
+            updateField={updateField} 
+            firmaRef={firmaRef1} />
+            
+            <SeccionRetractil num="2" 
+            formData={formData} 
+            updateField={updateField} 
+            firmaRef={firmaRef2} />
           </>
         )}
 
