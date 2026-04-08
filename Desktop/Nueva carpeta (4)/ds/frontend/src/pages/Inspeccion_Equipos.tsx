@@ -48,6 +48,7 @@ export default function Inspeccion_Equipos() {
   const [pendientes, setPendientes] = useState<any[]>([]);
   const [showPendientes, setShowPendientes] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sessionError, setSessionError] = useState(false);
 
   const [formData, setFormData] = useState<FormDataType>(() => {
     try {
@@ -93,15 +94,21 @@ export default function Inspeccion_Equipos() {
     try {
       const data = await obtenerPendientes();
       setPendientes(data);
-    } catch (err) {
+      setSessionError(false);
+    } catch (err: any) {
+      if (err.message === 'SESION_EXPIRADA') {
+        setSessionError(true);
+      }
       console.error("Error al cargar pendientes", err);
     }
   };
 
   const handleGuardarProgreso = async () => {
     setSaving(true);
+    // Siempre guardar localmente primero como respaldo
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+
     try {
-      // Intentar obtener la serie de los campos comunes
       const serie = (formData as any)[`esl_serie_1`] || 
                     (formData as any)[`eslp_serie_1`] || 
                     (formData as any)[`tie_serie_1`] || 
@@ -112,9 +119,15 @@ export default function Inspeccion_Equipos() {
 
       await guardarProgreso(serie, tipoInspeccion, JSON.stringify(formData));
       await cargarPendientes();
-      alert("Progreso guardado en la base de datos.");
-    } catch (err) {
-      alert("Error al guardar: " + err);
+      setSessionError(false);
+      alert("¡Progreso guardado en la nube exitosamente!");
+    } catch (err: any) {
+      if (err.message === 'SESION_EXPIRADA') {
+        setSessionError(true);
+        alert("Tu sesión ha expirado. El progreso se guardó LOCALMENTE en este equipo. Por favor, inicia sesión de nuevo para subirlo a la nube.");
+      } else {
+        alert("Error al guardar en la nube: " + err.message + ". Tu progreso sigue a salvo localmente.");
+      }
     } finally {
       setSaving(false);
     }
@@ -128,14 +141,14 @@ export default function Inspeccion_Equipos() {
       setTipoInspeccion(data.seccion as any);
       setShowPendientes(false);
       localStorage.setItem(STORAGE_KEY, data.datosJson);
-      alert("Progreso cargado.");
+      alert("Progreso cargado desde la nube.");
     } catch (err) {
       alert("Error al cargar: " + err);
     }
   };
 
   const handleEliminarProgreso = async (id: number) => {
-    if (!confirm("¿Eliminar este borrador?")) return;
+    if (!confirm("¿Eliminar este borrador de la nube?")) return;
     try {
       await eliminarProgreso(id);
       await cargarPendientes();
@@ -206,39 +219,50 @@ export default function Inspeccion_Equipos() {
     >
 
       {alerta && <AlertBanner tipo={alerta.tipo} mensaje={alerta.mensaje} />}
+      
+      {sessionError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm flex justify-between items-center">
+          <span>⚠️ Tu sesión ha expirado. Por favor, inicia sesión para sincronizar con la nube.</span>
+          <button onClick={() => window.location.href = '/login'} className="underline font-bold">Ir al Login</button>
+        </div>
+      )}
 
-      <div className="flex justify-between items-center mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200 gap-3">
         <div>
           <h3 className="font-bold text-gray-700">Gestión de Progreso</h3>
-          <p className="text-xs text-gray-500">Guarda tu avance para continuar después.</p>
+          <p className="text-xs text-gray-500">Los cambios se guardan localmente y puedes subirlos a la nube.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button 
             type="button"
-            onClick={() => setShowPendientes(!showPendientes)}
-            className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              setShowPendientes(!showPendientes);
+              if (!showPendientes) cargarPendientes();
+            }}
+            className="flex-1 sm:flex-none bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
           >
-            {showPendientes ? 'Cerrar Listado' : `Ver Pendientes (${pendientes.length})`}
+            {showPendientes ? 'Cerrar Listado' : `Ver Nube (${pendientes.length})`}
           </button>
           <button 
             type="button"
             disabled={saving}
             onClick={handleGuardarProgreso}
-            className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="flex-1 sm:flex-none bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Guardando...' : 'Guardar Progreso'}
+            {saving ? 'Sincronizando...' : 'Guardar en Nube'}
           </button>
         </div>
       </div>
 
       {showPendientes && (
         <div className="mb-6 bg-white border border-blue-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-            <span className="text-sm font-bold text-blue-800">Documentos en Progreso</span>
+          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200 flex justify-between items-center">
+            <span className="text-sm font-bold text-blue-800">Inspecciones en la Nube</span>
+            <button onClick={cargarPendientes} className="text-xs text-blue-600 hover:underline">Actualizar</button>
           </div>
           <div className="max-h-60 overflow-y-auto">
             {pendientes.length === 0 ? (
-              <p className="p-4 text-sm text-gray-500 text-center">No hay documentos guardados.</p>
+              <p className="p-4 text-sm text-gray-500 text-center">No hay documentos guardados en la nube.</p>
             ) : (
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
