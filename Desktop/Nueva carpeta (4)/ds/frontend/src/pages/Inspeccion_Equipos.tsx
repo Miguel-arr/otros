@@ -87,17 +87,21 @@ export default function Inspeccion_Equipos() {
   const firmaRef2 = useRef<SignaturePadHandle>(null);
 
   useEffect(() => {
-    cargarPendientes();
+    // Retrasar la carga inicial de pendientes para evitar errores de sesión transitorios
+    const timer = setTimeout(() => {
+      cargarPendientes(true); // silent = true para no asustar al usuario si falla al inicio
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
-  const cargarPendientes = async () => {
+  const cargarPendientes = async (silent = false) => {
     try {
       const data = await obtenerPendientes();
       setPendientes(data);
       setSessionError(false);
     } catch (err: any) {
       if (err.message === 'SESION_EXPIRADA') {
-        setSessionError(true);
+        if (!silent) setSessionError(true);
       }
       console.error("Error al cargar pendientes", err);
     }
@@ -118,13 +122,13 @@ export default function Inspeccion_Equipos() {
                     "SIN_SERIE";
 
       await guardarProgreso(serie, tipoInspeccion, JSON.stringify(formData));
-      await cargarPendientes();
+      await cargarPendientes(false);
       setSessionError(false);
       alert("¡Progreso guardado en la nube exitosamente!");
     } catch (err: any) {
       if (err.message === 'SESION_EXPIRADA') {
         setSessionError(true);
-        alert("Tu sesión ha expirado. El progreso se guardó LOCALMENTE en este equipo. Por favor, inicia sesión de nuevo para subirlo a la nube.");
+        alert("Tu sesión ha expirado o no estás autenticado. El progreso se guardó LOCALMENTE en este equipo. Por favor, inicia sesión de nuevo para sincronizar con la nube.");
       } else {
         alert("Error al guardar en la nube: " + err.message + ". Tu progreso sigue a salvo localmente.");
       }
@@ -151,7 +155,7 @@ export default function Inspeccion_Equipos() {
     if (!confirm("¿Eliminar este borrador de la nube?")) return;
     try {
       await eliminarProgreso(id);
-      await cargarPendientes();
+      await cargarPendientes(false);
     } catch (err) {
       alert("Error al eliminar: " + err);
     }
@@ -222,7 +226,7 @@ export default function Inspeccion_Equipos() {
       
       {sessionError && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm flex justify-between items-center">
-          <span>⚠️ Tu sesión ha expirado. Por favor, inicia sesión para sincronizar con la nube.</span>
+          <span>⚠️ Tu sesión ha expirado o no estás autenticado. Por favor, inicia sesión para sincronizar con la nube.</span>
           <button onClick={() => window.location.href = '/login'} className="underline font-bold">Ir al Login</button>
         </div>
       )}
@@ -237,7 +241,7 @@ export default function Inspeccion_Equipos() {
             type="button"
             onClick={() => {
               setShowPendientes(!showPendientes);
-              if (!showPendientes) cargarPendientes();
+              if (!showPendientes) cargarPendientes(false);
             }}
             className="flex-1 sm:flex-none bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
           >
@@ -258,7 +262,7 @@ export default function Inspeccion_Equipos() {
         <div className="mb-6 bg-white border border-blue-200 rounded-lg shadow-sm overflow-hidden">
           <div className="bg-blue-50 px-4 py-2 border-b border-blue-200 flex justify-between items-center">
             <span className="text-sm font-bold text-blue-800">Inspecciones en la Nube</span>
-            <button onClick={cargarPendientes} className="text-xs text-blue-600 hover:underline">Actualizar</button>
+            <button onClick={() => cargarPendientes(false)} className="text-xs text-blue-600 hover:underline">Actualizar</button>
           </div>
           <div className="max-h-60 overflow-y-auto">
             {pendientes.length === 0 ? (
