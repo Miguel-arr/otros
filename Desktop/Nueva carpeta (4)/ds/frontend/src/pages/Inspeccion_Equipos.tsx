@@ -48,7 +48,7 @@ export default function Inspeccion_Equipos() {
   const [pendientes, setPendientes] = useState<any[]>([]);
   const [showPendientes, setShowPendientes] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [sessionError, setSessionError] = useState(false);
+  const [loadingPendientes, setLoadingPendientes] = useState(false);
 
   const [formData, setFormData] = useState<FormDataType>(() => {
     try {
@@ -86,32 +86,29 @@ export default function Inspeccion_Equipos() {
   const firmaRef1 = useRef<SignaturePadHandle>(null);
   const firmaRef2 = useRef<SignaturePadHandle>(null);
 
+  // EFECTO PARA GUARDAR LOCALMENTE SIEMPRE QUE HAYA CAMBIOS
   useEffect(() => {
-    // Retrasar la carga inicial de pendientes para evitar errores de sesión transitorios
-    const timer = setTimeout(() => {
-      cargarPendientes(true); // silent = true para no asustar al usuario si falla al inicio
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
 
-  const cargarPendientes = async (silent = false) => {
+  const cargarPendientes = async () => {
+    setLoadingPendientes(true);
     try {
       const data = await obtenerPendientes();
       setPendientes(data);
-      setSessionError(false);
     } catch (err: any) {
       if (err.message === 'SESION_EXPIRADA') {
-        if (!silent) setSessionError(true);
+        alert("Para ver o guardar en la nube debes iniciar sesión. Tu progreso actual está guardado localmente.");
+      } else {
+        console.error("Error al cargar pendientes", err);
       }
-      console.error("Error al cargar pendientes", err);
+    } finally {
+      setLoadingPendientes(false);
     }
   };
 
   const handleGuardarProgreso = async () => {
     setSaving(true);
-    // Siempre guardar localmente primero como respaldo
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-
     try {
       const serie = (formData as any)[`esl_serie_1`] || 
                     (formData as any)[`eslp_serie_1`] || 
@@ -122,15 +119,13 @@ export default function Inspeccion_Equipos() {
                     "SIN_SERIE";
 
       await guardarProgreso(serie, tipoInspeccion, JSON.stringify(formData));
-      await cargarPendientes(false);
-      setSessionError(false);
+      await cargarPendientes();
       alert("¡Progreso guardado en la nube exitosamente!");
     } catch (err: any) {
       if (err.message === 'SESION_EXPIRADA') {
-        setSessionError(true);
-        alert("Tu sesión ha expirado o no estás autenticado. El progreso se guardó LOCALMENTE en este equipo. Por favor, inicia sesión de nuevo para sincronizar con la nube.");
+        alert("Tu sesión ha expirado. Por favor, inicia sesión en otra pestaña y vuelve aquí para guardar en la nube. No cierres esta pestaña, tu progreso está seguro localmente.");
       } else {
-        alert("Error al guardar en la nube: " + err.message + ". Tu progreso sigue a salvo localmente.");
+        alert("Error al guardar en la nube: " + err.message + ". Tu progreso sigue a salvo localmente en este navegador.");
       }
     } finally {
       setSaving(false);
@@ -144,7 +139,6 @@ export default function Inspeccion_Equipos() {
       setFormData(datos);
       setTipoInspeccion(data.seccion as any);
       setShowPendientes(false);
-      localStorage.setItem(STORAGE_KEY, data.datosJson);
       alert("Progreso cargado desde la nube.");
     } catch (err) {
       alert("Error al cargar: " + err);
@@ -155,7 +149,7 @@ export default function Inspeccion_Equipos() {
     if (!confirm("¿Eliminar este borrador de la nube?")) return;
     try {
       await eliminarProgreso(id);
-      await cargarPendientes(false);
+      await cargarPendientes();
     } catch (err) {
       alert("Error al eliminar: " + err);
     }
@@ -224,78 +218,82 @@ export default function Inspeccion_Equipos() {
 
       {alerta && <AlertBanner tipo={alerta.tipo} mensaje={alerta.mensaje} />}
       
-      {sessionError && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm flex justify-between items-center">
-          <span>⚠️ Tu sesión ha expirado o no estás autenticado. Por favor, inicia sesión para sincronizar con la nube.</span>
-          <button onClick={() => window.location.href = '/login'} className="underline font-bold">Ir al Login</button>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200 gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm gap-3">
         <div>
-          <h3 className="font-bold text-gray-700">Gestión de Progreso</h3>
-          <p className="text-xs text-gray-500">Los cambios se guardan localmente y puedes subirlos a la nube.</p>
+          <h3 className="font-bold text-gray-800 text-lg">Gestión de Progreso</h3>
+          <p className="text-sm text-gray-600">Tu avance se guarda automáticamente en este navegador.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
             type="button"
             onClick={() => {
+              if (!showPendientes) cargarPendientes();
               setShowPendientes(!showPendientes);
-              if (!showPendientes) cargarPendientes(false);
             }}
-            className="flex-1 sm:flex-none bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-700 transition-colors"
+            className="flex-1 sm:flex-none bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all shadow-md"
           >
-            {showPendientes ? 'Cerrar Listado' : `Ver Nube (${pendientes.length})`}
+            {showPendientes ? 'Cerrar Listado' : 'Ver Nube'}
           </button>
           <button 
             type="button"
             disabled={saving}
             onClick={handleGuardarProgreso}
-            className="flex-1 sm:flex-none bg-green-600 text-white px-3 py-1.5 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="flex-1 sm:flex-none bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-md"
           >
-            {saving ? 'Sincronizando...' : 'Guardar en Nube'}
+            {saving ? 'Guardando...' : 'Guardar en Nube'}
           </button>
         </div>
       </div>
 
       {showPendientes && (
-        <div className="mb-6 bg-white border border-blue-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200 flex justify-between items-center">
-            <span className="text-sm font-bold text-blue-800">Inspecciones en la Nube</span>
-            <button onClick={() => cargarPendientes(false)} className="text-xs text-blue-600 hover:underline">Actualizar</button>
+        <div className="mb-6 bg-white border border-indigo-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex justify-between items-center">
+            <span className="text-sm font-bold text-indigo-900">Tus borradores en la Nube</span>
+            <button onClick={cargarPendientes} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-wider">
+              {loadingPendientes ? 'Cargando...' : 'Actualizar'}
+            </button>
           </div>
-          <div className="max-h-60 overflow-y-auto">
-            {pendientes.length === 0 ? (
-              <p className="p-4 text-sm text-gray-500 text-center">No hay documentos guardados en la nube.</p>
+          <div className="max-h-72 overflow-y-auto">
+            {loadingPendientes ? (
+              <div className="p-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
+                <p className="text-sm text-gray-500 font-medium">Conectando con el servidor...</p>
+              </div>
+            ) : pendientes.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-sm text-gray-500 italic">No tienes inspecciones guardadas en la nube aún.</p>
+              </div>
             ) : (
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                <thead className="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold tracking-widest border-b">
                   <tr>
-                    <th className="px-4 py-2">Serie</th>
-                    <th className="px-4 py-2">Sección</th>
-                    <th className="px-4 py-2">Fecha</th>
-                    <th className="px-4 py-2 text-right">Acciones</th>
+                    <th className="px-5 py-3">Serie Equipo</th>
+                    <th className="px-5 py-3">Tipo</th>
+                    <th className="px-5 py-3">Último Cambio</th>
+                    <th className="px-5 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {pendientes.map(p => (
-                    <tr key={p.id} className="hover:bg-blue-50 transition-colors">
-                      <td className="px-4 py-3 font-medium">{p.serie}</td>
-                      <td className="px-4 py-3 capitalize">{p.seccion}</td>
-                      <td className="px-4 py-3 text-gray-500">{new Date(p.fechaActualizacion).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-right flex gap-2 justify-end">
-                        <button 
-                          onClick={() => handleCargarInspeccion(p.id)}
-                          className="text-blue-600 hover:underline font-semibold"
-                        >
-                          Continuar
-                        </button>
-                        <button 
-                          onClick={() => handleEliminarProgreso(p.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Eliminar
-                        </button>
+                    <tr key={p.id} className="hover:bg-indigo-50/50 transition-colors">
+                      <td className="px-5 py-4 font-bold text-gray-800">{p.serie}</td>
+                      <td className="px-5 py-4"><span className="px-2 py-1 bg-gray-100 rounded text-[11px] font-bold uppercase text-gray-600">{p.seccion}</span></td>
+                      <td className="px-5 py-4 text-gray-500">{new Date(p.fechaActualizacion).toLocaleDateString()}</td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex gap-3 justify-end">
+                          <button 
+                            onClick={() => handleCargarInspeccion(p.id)}
+                            className="text-indigo-600 hover:text-indigo-800 font-bold text-xs uppercase tracking-tighter"
+                          >
+                            Continuar
+                          </button>
+                          <button 
+                            onClick={() => handleEliminarProgreso(p.id)}
+                            className="text-rose-500 hover:text-rose-700 font-bold text-xs uppercase tracking-tighter"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
